@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kedai Bar-Bar - Aplikasi Pembeli & Penjual</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Poppins & Fredoka (Pop Retro Style) -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        barbarRed: '#D32F2F',
+                        barbarYellow: '#FFC107',
+                        barbarDarkRed: '#B71C1C',
+                        barbarBg: '#FFFBE6',
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        poppins: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #FFFBE6;
+            background-image: radial-gradient(#F59E0B 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .font-retro {
+            font-family: 'Fredoka', cursive;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D32F2F;
+            border-radius: 4px;
+        }
+        .pop-card {
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px #000;
+        }
+        .pop-button {
+            border: 2px solid #000;
+            box-shadow: 3px 3px 0px #000;
+            transition: all 0.1s ease;
+        }
+        .pop-button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+        .retro-title-stroke {
+            text-shadow: 2px 2px 0px #B71C1C, -1px -1px 0px #B71C1C, 1px -1px 0px #B71C1C, -1px 1px 0px #B71C1C;
+        }
+        /* Fix product card images so they don't get cropped */
+        .product-img-box {
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+        .product-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+    </style>
+</head>
+<body class="text-gray-900 pb-12 min-h-screen">
+
+    <!-- Top Role Navigation Switcher Header -->
+    <header class="sticky top-0 z-50 bg-barbarRed text-white shadow-md border-b-4 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-barbarYellow text-barbarDarkRed p-1 rounded-full border-2 border-black flex items-center justify-center">
+                    <img src="https://i.ibb.co.com/LdDCntMm/logo-barbar.jpg" alt="Logo Bar-Bar" class="w-10 h-10 rounded-full object-cover border border-black">
+            <!-- Role View Switcher (Upgraded Pop-Retro Aesthetic) -->
+            <div class="flex items-center bg-[#7F1D1D] p-1.5 rounded-2xl border-2 border-black shadow-inner gap-1.5">
+                <button id="btn-customer-mode" onclick="switchView('customer')" class="px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-barbarYellow text-black border-2 border-black shadow-[3px_3px_0px_#000] hover:bg-yellow-300">
+                    <span class="w-6 h-6 rounded-full bg-barbarRed text-white flex items-center justify-center text-xs border border-black">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </span>
+                    <span>Mode Pembeli</span>
+                </button>
+                <button id="btn-seller-mode" onclick="requestSellerAccess()" class="px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-red-800/80 text-yellow-200 border-2 border-transparent hover:border-yellow-400/50 hover:text-white">
+                    <span class="w-6 h-6 rounded-full bg-black/40 text-yellow-300 flex items-center justify-center text-xs border border-yellow-400/40">
+                        <i class="fa-solid fa-lock" id="seller-lock-icon"></i>
+                    </span>
+                    <span>Mode Penjual (Dapur/POS)</span>
+                    <span id="order-badge" class="bg-yellow-400 text-black text-xs px-2 py-0.5 rounded-full font-extrabold border border-black ml-0.5 hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!--          CUSTOMER VIEW (SISI PEMBELI)      -->
+    <!-- ========================================== -->
+    <main id="customer-view" class="max-w-7xl mx-auto px-4 pt-6">
+        
+        <!-- Navigation Header (Replaced with interactive Home Page button & Your Chart) -->
+        <nav class="flex flex-wrap justify-between items-center gap-3 mb-8 bg-white/80 backdrop-blur px-4 py-3 rounded-2xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <div class="flex items-center gap-2">
+                <button onclick="switchCustomerTab('home')" id="nav-home-btn" class="px-4 py-2 rounded-xl font-retro font-bold text-base bg-white hover:bg-yellow-100 text-barbarDarkRed border-2 border-black pop-button flex items-center gap-2">
+                    <i class="fa-solid fa-house text-barbarRed"></i> Home Page
+                </button>
+            </div>
+
+            <!-- Floating/Top Action Buttons for Queue Status & Your Chart -->
+            <div class="flex items-center gap-2.5">
+                <button onclick="openActiveQueueModal()" id="btn-my-queue" class="hidden px-4 py-2 rounded-xl font-retro font-bold text-sm bg-green-600 hover:bg-green-700 text-white border-2 border-black pop-button flex items-center gap-1.5">
+                    <i class="fa-solid fa-ticket"></i> Queue <span id="nav-queue-num">#000</span>
+                </button>
+                <button onclick="switchCustomerTab('chart')" id="tab-chart" class="px-4 py-2 rounded-xl font-retro font-bold text-base bg-barbarYellow text-black border-2 border-black pop-button hover:bg-yellow-300 flex items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping"></i> Your Chart
+                    <span id="nav-cart-badge" class="bg-barbarRed text-white text-xs px-2 py-0.5 rounded-full border border-black font-extrabold">0</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- PAGE 1: HOME PAGE (Redesigned to match the reference image) -->
+        <section id="page-home" class="space-y-6">
+            <div class="bg-barbarYellow rounded-3xl p-6 md:p-10 pop-card relative overflow-hidden flex flex-col items-center text-center space-y-8">
+                
+                <!-- Top Header banner matching reference (Updated with aesthetic Kedai Bar-bar image centered, fitted, and larger) -->
+                <div class="w-full flex items-center justify-center bg-barbarRed p-4 rounded-2xl border-3 border-black shadow-md relative">
+                    <div class="absolute left-4 hidden sm:flex items-center">
+                        <img src="https://i.ibb.co.com/LdDCntMm/logo-barbar.jpg" alt="Logo Bar-Bar" class="w-16 h-16 rounded-full object-cover border-2 border-black">
+                    </div>
+                    <div class="w-full max-w-md md:max-w-lg py-1 flex items-center justify-center">
+                        <img src="https://i.ibb.co.com/Q7kt9Sw3/kedai-barbar.jpg" alt="Kedai Bar-Bar Aesthetic" class="w-full h-auto max-h-24 object-contain rounded-xl">
+                    </div>
+                    <div class="absolute right-4 hidden sm:block bg-white px-4 py-2 rounded-full border-2 border-black font-retro font-bold text-sm text-gray-900 shadow">
+                        Home Page
+                    </div>
+                </div>
+
+                <!-- Subtitle Pill -->
+                <div class="inline-block bg-white px-8 py-2 rounded-full border-2 border-black font-retro font-bold text-lg text-gray-900 shadow">
+                    WHAT DO YOU WANT TO KNOW?
+                </div>
+
+                <!-- Three Interactive Navigation Cards matching the screenshot -->
+                <div class="grid md:grid-cols-3 gap-6 w-full max-w-5xl">
+                    <!-- Card 1: About Us (Updated with about-us-2.jpg) -->
+                    <div onclick="switchCustomerTab('about')" class="bg-[#FFFDF5] rounded-3xl p-6 border-4 border-black pop-card cursor-pointer transition transform hover:-translate-y-2 flex flex-col items-center justify-center min-h-[320px] space-y-6 shadow-lg">
+                        <div class="w-full max-w-[200px]">
+                            <img src="https://i.ibb.co.com/V0QMsKwX/about-us.jpg" alt="About Us" class="w-full h-auto object-contain drop-shadow">
+                        </div>
+                        <div class="w-full max-w-[160px] rounded-2xl overflow-hidden border-2 border-black bg-white p-1 shadow">
+                            <img src="https://i.ibb.co.com/yFbvqdx2/about-us-2.jpg" alt="About Us 2" class="w-full h-20 object-contain">
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Our Menu (Updated with our-menu-2.jpg) -->
+                    <div onclick="switchCustomerTab('menu')" class="bg-[#FFFDF5] rounded-3xl p-6 border-4 border-black pop-card cursor-pointer transition transform hover:-translate-y-2 flex flex-col items-center justify-center min-h-[320px] space-y-4 shadow-lg">
+                        <div class="w-full max-w-[180px]">
+                            <img src="https://i.ibb.co.com/4nCtYYHx/our-menu.jpg" alt="Our Menu" class="w-full h-auto object-contain drop-shadow">
+                        </div>
+                        <div class="w-full max-w-[160px] rounded-2xl overflow-hidden border-2 border-black bg-white p-1 shadow">
+                            <img src="https://i.ibb.co.com/HLVXzbS3/our-menu-2.jpg" alt="Our Menu 2" class="w-full h-20 object-contain">
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Contact Person -->
+                    <div onclick="switchCustomerTab('contact')" class="bg-[#FFFDF5] rounded-3xl p-6 border-4 border-black pop-card cursor-pointer transition transform hover:-translate-y-2 flex flex-col items-center justify-center min-h-[320px] space-y-6 shadow-lg">
+                        <div class="w-full max-w-[200px] rounded-2xl overflow-hidden bg-white p-1 flex items-center justify-center">
+                            <img src="https://i.ibb.co.com/20Q6KHPp/contact-person.jpg" alt="Contact Person" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" class="w-full h-auto object-contain drop-shadow">
+                            <div class="hidden font-retro text-3xl font-extrabold text-barbarYellow retro-title-stroke leading-tight text-center uppercase">
+                                CONTACT<br>PERSON
+                            </div>
+                        </div>
+                        <div class="w-16 h-16 bg-green-500 rounded-full border-3 border-black flex items-center justify-center text-4xl text-white shadow">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- PAGE 2: ABOUT US -->
+        <section id="page-about" class="hidden space-y-8 max-w-5xl mx-auto">
+            <div class="bg-[#FFFDF5] rounded-3xl p-6 md:p-10 pop-card border-4 border-black space-y-6">
+                <div class="text-center space-y-2">
+                    <span class="bg-barbarRed text-white px-4 py-1 rounded-full font-retro text-sm uppercase tracking-wider border border-black">Our Story</span>
+                    <h2 class="font-retro text-4xl md:text-5xl font-extrabold text-barbarYellow retro-title-stroke">ABOUT KEDAI BAR-BAR</h2>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-4 text-gray-800 text-base leading-relaxed">
+                        <p>
+                            <strong>Kedai Bar-Bar</strong> merupakan usaha kuliner yang didirikan oleh <strong>Bapak Joni Suherman</strong> pada tahun <strong>2008</strong> dan berlokasi di lingkungan Kantin Biru / Blok G, Universitas Negeri Jakarta (UNJ).
+                        </p>
+                        <p>
+                            Hadir untuk memenuhi kebutuhan konsumsi harian mahasiswa dan civitas akademika dengan variasi menu lengkap: makanan berat, minuman segar, aneka snack, hingga es krim dengan harga terjangkau.
+                        </p>
+                        <div class="bg-yellow-100 p-4 rounded-2xl border-2 border-black">
+                            <h4 class="font-retro font-bold text-lg text-barbarDarkRed mb-1">Filosofi "Bar-Bar"</h4>
+                            <p class="text-sm">Singkatan dari <strong>Barokah Bareng-Bareng</strong>, filosofi bisnis yang mengutamakan keberkahan bersama di atas keuntungan semata.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-barbarRed text-white p-5 rounded-2xl border-2 border-black shadow">
+                            <h3 class="font-retro text-xl font-bold text-barbarYellow mb-2"><i class="fa-solid fa-eye mr-2"></i> VISI</h3>
+                            <p class="text-sm">Menjadi kedai kampus yang tidak hanya berorientasi pada pertumbuhan bisnis, tetapi menempatkan keberkahan bersama di atas keuntungan semata.</p>
+                        </div>
+                        <div class="bg-barbarYellow text-gray-900 p-5 rounded-2xl border-2 border-black shadow">
+                            <h3 class="font-retro text-xl font-bold text-barbarDarkRed mb-2"><i class="fa-solid fa-bullseye mr-2"></i> MISI</h3>
+                            <p class="text-sm">Mengembangkan usaha secara bertahap dan berkelanjutan dengan menjunjung tinggi nilai kejujuran, keikhlasan, dan keberkahan dalam setiap operasional.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline / Perkembangan -->
+                <div class="border-t-2 border-black pt-6 mt-6">
+                    <h3 class="font-retro text-2xl font-bold text-center mb-6">PERKEMBANGAN USAHA</h3>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-2xl border-2 border-black text-center">
+                            <div class="font-retro text-2xl font-bold text-barbarRed">2008</div>
+                            <div class="font-bold text-sm mt-1">Bar Bar Es Teh Poci</div>
+                            <p class="text-xs text-gray-600 mt-2">Dirintis pertama kali dengan menu utama teh poci favorit mahasiswa.</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border-2 border-black text-center">
+                            <div class="font-retro text-2xl font-bold text-barbarRed">2022</div>
+                            <div class="font-bold text-sm mt-1">Bar Bar Foodtruck</div>
+                            <p class="text-xs text-gray-600 mt-2">Ekspansi layanan event kampus dan katering berbagai acara.</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border-2 border-black text-center">
+                            <div class="font-retro text-2xl font-bold text-barbarRed">2024</div>
+                            <div class="font-bold text-sm mt-1">Kedai Fisik Kantin UNJ</div>
+                            <p class="text-xs text-gray-600 mt-2">Resmi dibuka secara fisik menyajikan ragam menu favorit anak muda.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: OUR MENU -->
+        <section id="page-menu" class="hidden space-y-6">
+            <!-- Category Navigation -->
+            <div class="flex overflow-x-auto gap-3 pb-2 scrollbar-none">
+                <button onclick="selectMenuCategory('bestseller')" id="mcat-bestseller" class="menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-barbarRed text-white border-2 border-black pop-button whitespace-nowrap">
+                    ⭐ Best Seller
+                </button>
+                <button onclick="selectMenuCategory('foods')" id="mcat-foods" class="menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-[#FFFDF5] text-gray-800 border-2 border-black pop-button hover:bg-yellow-100 whitespace-nowrap">
+                    🍛 Foods
+                </button>
+                <button onclick="selectMenuCategory('drinks')" id="mcat-drinks" class="menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-[#FFFDF5] text-gray-800 border-2 border-black pop-button hover:bg-yellow-100 whitespace-nowrap">
+                    🥤 Drinks
+                </button>
+                <button onclick="selectMenuCategory('dessert')" id="mcat-dessert" class="menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-[#FFFDF5] text-gray-800 border-2 border-black pop-button hover:bg-yellow-100 whitespace-nowrap">
+                    🍧 Snack & Dessert
+                </button>
+                <button onclick="selectMenuCategory('schedule')" id="mcat-schedule" class="menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-[#FFFDF5] text-gray-800 border-2 border-black pop-button hover:bg-yellow-100 whitespace-nowrap">
+                    📅 Ice Cream Schedule
+                </button>
+            </div>
+
+            <!-- Search bar -->
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gray-400"></i>
+                    <input type="text" id="menu-search-input" oninput="filterMenuSearch()" placeholder="Cari menu makanan atau minuman..." class="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-black rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-barbarRed">
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center bg-barbarYellow p-4 rounded-2xl border-2 border-black">
+                <h3 id="active-category-title" class="font-retro text-2xl font-extrabold text-barbarDarkRed">Best Seller</h3>
+                <div class="flex items-center gap-3">
+                    <span id="pagination-indicator" class="hidden text-xs font-bold bg-white px-3 py-1 rounded-full border border-black">Halaman 1/2</span>
+                    <button onclick="switchCustomerTab('chart')" class="bg-barbarRed text-white px-4 py-2 rounded-xl border-2 border-black font-retro font-bold text-sm pop-button flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping"></i> Chart (<span id="menu-header-cart-count">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menu Grid Container -->
+            <div id="menu-items-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Dynamic products rendered by JS -->
+            </div>
+
+            <!-- Foods Pagination Footer -->
+            <div id="foods-pagination" class="hidden flex justify-between items-center bg-white p-4 rounded-2xl border-2 border-black">
+                <button onclick="changeFoodPage(1)" id="btn-prev-food" class="px-4 py-2 bg-gray-100 font-bold rounded-xl border-2 border-black text-sm disabled:opacity-50">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Prev (1/2)
+                </button>
+                <span id="food-page-label" class="font-retro font-bold text-lg">1 / 2</span>
+                <button onclick="changeFoodPage(2)" id="btn-next-food" class="px-4 py-2 bg-barbarYellow font-bold rounded-xl border-2 border-black text-sm disabled:opacity-50">
+                    Next (2/2) <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Ice Cream Schedule View Panel -->
+            <div id="schedule-panel" class="hidden bg-[#FFFDF5] p-6 rounded-3xl border-4 border-black space-y-6">
+                <div class="text-center">
+                    <h3 class="font-retro text-3xl font-extrabold text-barbarRed">JADWAL RASA ICE CREAM</h3>
+                    <p class="text-xs text-gray-600 mt-1">Pilihan varian rasa es krim mingguan di Kedai Bar-Bar</p>
+                </div>
+
+                <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-2xl border-2 border-black text-center shadow-sm">
+                        <div class="font-retro text-lg font-bold text-barbarDarkRed">SENIN</div>
+                        <div class="text-sm font-semibold text-gray-800 mt-1">Macha & Vanilla</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border-2 border-black text-center shadow-sm">
+                        <div class="font-retro text-lg font-bold text-barbarDarkRed">SELASA</div>
+                        <div class="text-sm font-semibold text-gray-800 mt-1">Strawberry & Vanilla</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border-2 border-black text-center shadow-sm">
+                        <div class="font-retro text-lg font-bold text-barbarDarkRed">RABU</div>
+                        <div class="text-sm font-semibold text-gray-800 mt-1">Macha & Vanilla</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border-2 border-black text-center shadow-sm">
+                        <div class="font-retro text-lg font-bold text-barbarDarkRed">KAMIS</div>
+                        <div class="text-sm font-semibold text-gray-800 mt-1">Coklat & Vanilla</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border-2 border-black text-center shadow-sm sm:col-span-2 md:col-span-2">
+                        <div class="font-retro text-lg font-bold text-barbarDarkRed">JUMAT</div>
+                        <div class="text-sm font-semibold text-gray-800 mt-1">Macha & Vanilla</div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-2xl border-2 border-black text-xs font-semibold space-y-1">
+                    <div class="font-bold text-barbarDarkRed uppercase">Topping & Sauce Tersedia Setiap Hari:</div>
+                    <div>• <strong>Topping:</strong> Coco Crunch, Choco Chips, Meises Ceres, Kacang Mede, Crumble.</div>
+                    <div>• <strong>Sauce:</strong> Caramel, Strawberry Bar, Coklat.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: YOUR CHART & CUSTOMER DETAILS -->
+        <section id="page-chart" class="hidden max-w-3xl mx-auto">
+            <div class="bg-[#FFFDF5] rounded-3xl p-6 md:p-8 pop-card border-4 border-black space-y-6">
+                
+                <div class="flex justify-between items-center">
+                    <button onclick="switchCustomerTab('menu')" class="text-sm font-bold text-gray-700 hover:text-barbarRed flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Menu
+                    </button>
+                    <span id="cart-item-count" class="bg-barbarYellow px-3 py-1 rounded-full font-bold text-xs border-2 border-black">
+                        0 Item Dipilih
+                    </span>
+                </div>
+
+                <div class="bg-barbarRed text-barbarYellow text-center py-3 rounded-2xl border-2 border-black shadow">
+                    <h2 class="font-retro text-3xl md:text-4xl font-extrabold tracking-wide">YOUR CHART</h2>
+                </div>
+
+                <div class="flex justify-between bg-gray-200 px-4 py-2 rounded-xl border border-black font-retro font-bold text-sm uppercase">
+                    <span>SELECTION</span>
+                    <span>PRICE</span>
+                </div>
+
+                <div id="cart-items-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <p class="text-gray-400 text-center text-sm py-8">Belum ada menu yang dipilih. Silakan pilih menu terlebih dahulu.</p>
+                </div>
+
+                <div class="border-t-2 border-dashed border-black pt-4 space-y-1">
+                    <div class="flex justify-between text-sm font-semibold text-gray-600">
+                        <span>Subtotal</span>
+                        <span id="subtotal-price">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-retro font-extrabold text-barbarDarkRed">
+                        <span>TOTAL PEMBAYARAN</span>
+                        <span id="total-price">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-5 rounded-2xl border-2 border-black space-y-4">
+                    <h3 class="font-retro text-xl font-bold text-barbarDarkRed border-b border-black pb-2">
+                        CUSTOMER DETAILS
+                    </h3>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-extrabold text-gray-800 uppercase mb-1">NAME *</label>
+                            <input type="text" id="customer-name" placeholder="Enter your name..." class="w-full px-3.5 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-barbarRed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-gray-800 uppercase mb-1">PHONE NUMBER *</label>
+                            <input type="tel" id="customer-phone" placeholder="Enter your phone number..." class="w-full px-3.5 py-2.5 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-barbarRed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-gray-800 uppercase mb-1">LEAVE A NOTE HERE</label>
+                        <textarea id="customer-note" rows="2" placeholder="Contoh: Sambal dipisah, es sedikit..." class="w-full px-3.5 py-2 bg-white border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-barbarRed"></textarea>
+                    </div>
+                </div>
+
+                <button onclick="submitOrder()" class="w-full bg-barbarRed hover:bg-red-700 text-barbarYellow font-retro text-3xl py-4 rounded-full pop-button font-extrabold tracking-wider border-4 border-black flex items-center justify-center gap-3">
+                    CHECKOUT
+                </button>
+            </div>
+        </section>
+
+        <!-- PAGE 5: CONTACT PERSON -->
+        <section id="page-contact" class="hidden max-w-xl mx-auto">
+            <div class="bg-[#FFFDF5] rounded-3xl p-8 pop-card text-center space-y-6">
+                <h2 class="font-retro text-4xl font-extrabold text-barbarYellow retro-title-stroke">CONTACT PERSON</h2>
+                <div class="w-24 h-24 bg-green-500 rounded-full border-4 border-black mx-auto flex items-center justify-center text-5xl text-white shadow-md">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-xl text-gray-900">Kedai Bar-Bar (Kantin UNJ Blok G)</h3>
+                    <p class="text-sm text-gray-600">Melayani pemesanan harian mahasiswa, katering acara kampus, dan informasi menu.</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border-2 border-black text-sm font-semibold space-y-1">
+                    <div><i class="fa-solid fa-location-dot text-barbarRed mr-1"></i> Kantin Biru / Blok G, Universitas Negeri Jakarta</div>
+                    <div><i class="fa-solid fa-clock text-barbarRed mr-1"></i> Senin - Jumat, 07.00 - 17.00 WIB</div>
+                </div>
+                <a href="https://wa.me/6281234567890?text=Halo%20Kedai%20Bar-Bar%20UNJ,%20saya%20ingin%20bertanya%20tentang%20menu." target="_blank" class="inline-flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white font-retro text-xl py-3.5 rounded-2xl pop-button font-bold">
+                    <i class="fa-brands fa-whatsapp text-2xl"></i> CHAT WHATSAPP SEKARANG
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ========================================== -->
+    <!--           SELLER VIEW (SISI PENJUAL)       -->
+    <!-- ========================================== -->
+    <main id="seller-view" class="hidden max-w-7xl mx-auto px-4 pt-6 space-y-6">
+        
+        <!-- Seller Top Info Dashboard -->
+        <div class="bg-barbarDarkRed text-white p-6 rounded-3xl pop-card flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-retro text-3xl font-extrabold text-yellow-400">KEDAI BAR-BAR POS & DASHBOARD KASIR</h1>
+                </div>
+                <p class="text-xs text-red-200 mt-1">Sistem Pemrosesan Pesanan Real-Time Kantin UNJ Blok G</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="openAddMenuModal()" class="bg-barbarYellow hover:bg-yellow-300 text-black font-retro font-bold px-4 py-3 rounded-2xl border-2 border-black pop-button text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus"></i> Tambah Menu Baru
+                </button>
+                <div class="bg-black/40 px-4 py-2 rounded-2xl border border-red-400 text-center">
+                    <div class="text-xs text-gray-300">Total Pendapatan</div>
+                    <div id="stat-total-income" class="font-retro text-2xl font-bold text-green-400">Rp 0</div>
+                </div>
+                <button onclick="lockSellerSession()" class="bg-gray-800 hover:bg-gray-900 text-white font-retro font-bold px-4 py-3 rounded-2xl border-2 border-black pop-button text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-right-from-bracket"></i> Kunci Kasir
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Views Tab Nav -->
+        <div class="flex gap-3 border-b-2 border-gray-300 pb-3">
+            <button onclick="switchSellerTab('orders')" id="seller-tab-orders" class="px-5 py-2 rounded-xl font-retro font-bold text-lg bg-barbarRed text-white border-2 border-black pop-button">
+                <i class="fa-solid fa-list-check mr-1"></i> Order List (Masuk)
+            </button>
+            <button onclick="switchSellerTab('queue')" id="seller-tab-queue" class="px-5 py-2 rounded-xl font-retro font-bold text-lg bg-white text-gray-800 border-2 border-black pop-button hover:bg-yellow-100">
+                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Queue List (Selesai/Lunas)
+            </button>
+        </div>
+
+        <!-- SELLER PAGE 1: ORDER LIST -->
+        <section id="seller-orders-section">
+            <div class="mb-4 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800 font-retro">Daftar Tiket Pesanan Baru</h2>
+                <span class="text-xs text-gray-500 font-medium">Penjual dapat mengedit jumlah item atau klik "PAYMENT COMPLETED"</span>
+            </div>
+
+            <div id="seller-order-tickets" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic order tickets -->
+            </div>
+        </section>
+
+        <!-- SELLER PAGE 2: QUEUE LIST -->
+        <section id="seller-queue-section" class="hidden">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-gray-800 font-retro">Daftar Antrean & Pesanan Selesai (Queue List)</h2>
+            </div>
+            <div id="seller-queue-tickets" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Finished tickets -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SUCCESSFUL ORDER & YOUR QUEUE MODAL -->
+    <div id="queue-receipt-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#FFFDF5] rounded-3xl pop-card border-4 border-black max-w-sm w-full p-6 text-center space-y-5 relative">
+            <div class="bg-green-600 text-white w-16 h-16 rounded-full border-2 border-black mx-auto flex items-center justify-center text-3xl shadow">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            
+            <div>
+                <h3 class="font-retro text-3xl font-extrabold text-barbarRed leading-tight">SUCCESSFUL ORDER!</h3>
+                <p id="receipt-time" class="text-xs font-bold text-gray-500 mt-1">At 00:00 WIB</p>
+            </div>
+
+            <div class="bg-barbarYellow p-4 rounded-2xl border-2 border-black">
+                <div class="text-xs font-extrabold uppercase tracking-wider text-gray-800">YOUR QUEUE</div>
+                <div id="receipt-queue-number" class="font-retro text-5xl font-black text-barbarDarkRed my-1">#001</div>
+                <div id="receipt-customer-info" class="text-xs font-bold text-gray-900">Nama Pemesan</div>
+            </div>
+
+            <div class="bg-white p-3 rounded-xl border border-black text-xs font-bold text-gray-700">
+                <i class="fa-solid fa-cash-register text-barbarRed mr-1"></i> Please pay at the cashier.
+                <div id="receipt-status-badge" class="mt-2 inline-block px-3 py-1 rounded-full bg-yellow-200 text-yellow-900 border border-black text-[11px]">
+                    Status: Menunggu Pembayaran di Kasir
+                </div>
+            </div>
+
+            <button onclick="closeQueueModal()" class="w-full bg-barbarRed hover:bg-red-700 text-barbarYellow font-retro text-2xl py-2.5 rounded-2xl pop-button font-extrabold border-2 border-black">
+                DONE
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: Tambah Menu Baru oleh Penjual -->
+    <div id="add-menu-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#FFFDF5] rounded-3xl pop-card border-4 border-black max-w-md w-full p-6 space-y-4">
+            <h3 class="font-retro text-2xl font-bold text-barbarDarkRed">Tambah Menu Baru</h3>
+            <form onsubmit="handleAddNewMenu(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Nama Menu</label>
+                    <input type="text" id="new-menu-name" required placeholder="Contoh: Seblak Special Bar-bar" class="w-full px-3 py-2 bg-white border-2 border-black rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Harga (Rp)</label>
+                    <input type="number" id="new-menu-price" required placeholder="18000" class="w-full px-3 py-2 bg-white border-2 border-black rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Kategori</label>
+                    <select id="new-menu-cat" class="w-full px-3 py-2 bg-white border-2 border-black rounded-xl text-sm font-semibold">
+                        <option value="foods">Foods</option>
+                        <option value="drinks">Drinks</option>
+                        <option value="dessert">Snack and Dessert</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeAddMenuModal()" class="w-1/2 bg-gray-200 font-bold py-2.5 rounded-xl border-2 border-black">Batal</button>
+                    <button type="submit" class="w-1/2 bg-barbarRed text-white font-bold py-2.5 rounded-xl border-2 border-black">Simpan Menu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Notification Modal -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl pop-card max-w-sm w-full p-6 text-center space-y-4">
+            <h3 id="modal-title" class="font-retro text-2xl font-bold text-gray-900">Notifikasi</h3>
+            <p id="modal-message" class="text-gray-600 text-sm"></p>
+            <button onclick="closeModal()" class="w-full bg-barbarRed text-white font-bold py-2.5 rounded-xl pop-button">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- Seller Access Password / PIN Modal -->
+    <div id="seller-auth-modal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-[#FFFDF5] rounded-3xl pop-card border-4 border-black max-w-sm w-full p-6 text-center space-y-5 relative">
+            <div class="bg-barbarRed text-barbarYellow w-16 h-16 rounded-2xl border-2 border-black mx-auto flex items-center justify-center text-3xl shadow">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <div>
+                <h3 class="font-retro text-2xl font-extrabold text-gray-900 uppercase">AKSES MODE PENJUAL</h3>
+                <p class="text-xs text-gray-600 mt-1">Masukkan Kode Akses / PIN Kasir Kedai Bar-Bar.</p>
+            </div>
+
+            <form onsubmit="verifySellerAccess(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="seller-pin-input" placeholder="Masukkan Kode Akses..." autocomplete="off"
+                        class="w-full px-4 py-3 text-center tracking-widest font-retro text-xl bg-white border-2 border-black rounded-2xl focus:outline-none focus:ring-2 focus:ring-barbarRed">
+                    <p id="seller-pin-error" class="hidden text-xs font-bold text-red-600 mt-2">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Kode akses salah! Silakan coba lagi.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <button type="button" onclick="closeSellerAuthModal()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-retro text-lg py-2.5 rounded-2xl pop-button font-bold">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-full bg-barbarRed hover:bg-red-700 text-barbarYellow font-retro text-lg py-2.5 rounded-2xl pop-button font-bold">
+                        Masuk POS
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic & Real-Time Cloud Sync -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Konfigurasi Cloud Storage Real-Time
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kedai-barbar-app';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isInitialLoad = true;
+
+        // Data Produk Default
+        const defaultProducts = [
+            { id: 1, name: 'Nasi Ayam Bakar', price: 23000, category: 'foods', bestSeller: true, icon: 'fa-drumstick-bite', color: 'bg-amber-700', image: 'https://i.ibb.co.com/tp205dbZ/nasi-ayam-bakar.jpg' },
+            { id: 2, name: 'Nasi Ayam Goreng Lengkuas', price: 23000, category: 'foods', bestSeller: true, icon: 'fa-utensils', color: 'bg-yellow-600', image: 'https://i.ibb.co.com/qLLBpY59/ayam-goreng-lengkuas.jpg' },
+            { id: 3, name: 'Ice Cream Cone', price: 15000, category: 'dessert', bestSeller: true, icon: 'fa-ice-cream', color: 'bg-pink-500', image: 'https://i.ibb.co.com/Kxpv6S1z/ice-cream-cone.jpg' },
+            { id: 6, name: 'Nasi Cumi Cabe Hijau', price: 20000, category: 'foods', bestSeller: true, icon: 'fa-bowl-food', color: 'bg-green-700', image: 'https://i.ibb.co.com/0yxKCqqR/cumi-cabe-ijo.jpg' },
+            { id: 7, name: 'Nasi Goreng *Biasa Special Seafood Kambing', price: 17000, category: 'foods', bestSeller: false, icon: 'fa-plate-wheat', color: 'bg-orange-600', image: 'https://i.ibb.co.com/67CBqfh7/nasi-goreng.jpg' },
+            { id: 8, name: 'Nasi Ayam Geprek', price: 18000, category: 'foods', bestSeller: false, icon: 'fa-fire', color: 'bg-red-700', image: 'https://i.ibb.co.com/LDj4y7LC/ayam-geprek.jpg' },
+            { id: 9, name: 'Rice Bowl Egg Roll', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-amber-600', image: 'https://i.ibb.co.com/96Vvd7z/ricebowl-eggroll.jpg' },
+            { id: 10, name: 'Rice Bowl Chicken Katsu', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-orange-500', image: 'https://i.ibb.co.com/NgPpNGrP/rb-chicken-katsu.jpg' },
+            { id: 11, name: 'Rice Bowl Chicken Teriyaki', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-amber-800', image: 'https://i.ibb.co.com/VcDPfv7S/rb-chicken-teriyaki.jpg' },
+            { id: 12, name: 'Rice Bowl Ebi Furay', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-shrimp', color: 'bg-yellow-500', image: 'https://i.ibb.co.com/mV8TX8nx/rb-ebi-furay.jpg' },
+            { id: 13, name: 'Ricebowl Ebi Katsu', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-orange-600', image: 'https://i.ibb.co.com/whgFsG2S/rb-ebi-katsu.jpg' },
+            { id: 14, name: 'Bakso Aci', price: 15000, category: 'foods', bestSeller: false, icon: 'fa-bowl-food', color: 'bg-red-500', image: 'https://i.ibb.co.com/DdNfk5f/baso-aci.jpg' },
+            { id: 15, name: 'Rice Bowl Spicy Chicken Wings', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-drumstick-bite', color: 'bg-red-700', image: 'https://i.ibb.co.com/B2Nj18Zg/rb-spicy-chicken-wings.jpg' },
+            { id: 16, name: 'Ricebowl Kani Katsu', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-rose-500', image: 'https://i.ibb.co.com/5WTzGCqD/rb-kani-katsu.jpg' },
+            { id: 17, name: 'Rice Bowl Kulit Ayam Gurih', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-yellow-700', image: 'https://i.ibb.co.com/TxSztQdy/rb-kulit-ayam-gurih.jpg' },
+            { id: 18, name: 'Rice Bowl Beef Teriyaki', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-stone-700', image: 'https://i.ibb.co.com/tpSDnqHq/rb-beef-teriyaki.jpg' },
+            { id: 19, name: 'Rice Bowl Chicken Popcorn', price: 20000, category: 'foods', bestSeller: false, icon: 'fa-bowl-rice', color: 'bg-amber-500', image: 'https://i.ibb.co.com/MyfNt0T4/rb-chicken-popcorn.jpg' },
+            { id: 20, name: 'Mie Kocok', price: 17000, category: 'foods', bestSeller: false, icon: 'fa-bowl-food', color: 'bg-yellow-600', image: 'https://i.ibb.co.com/mrtV53tt/mie-kocok.jpg' },
+            { id: 21, name: 'Mie Chili Oil', price: 15000, category: 'foods', bestSeller: false, icon: 'fa-pepper-hot', color: 'bg-red-600', image: 'https://i.ibb.co.com/21HjjY3r/mie-chilli-oil.jpg' },
+            { id: 22, name: 'Mie Bangladesh', price: 17000, category: 'foods', bestSeller: false, icon: 'fa-bowl-food', color: 'bg-orange-700', image: 'https://i.ibb.co.com/HfBZ2hgt/mie-bangladesh.jpg' },
+            { id: 23, name: 'Kwetiau Goreng', price: 17000, category: 'foods', bestSeller: false, icon: 'fa-plate-wheat', color: 'bg-amber-700', image: 'https://i.ibb.co.com/rf3MTnT0/kwetiau.jpg' },
+            { id: 24, name: 'Seblak', price: 15000, category: 'foods', bestSeller: false, icon: 'fa-fire-flame-curved', color: 'bg-red-600', image: 'https://i.ibb.co.com/Q3jBrqbf/seblak.jpg' },
+            { id: 36, name: 'Steamboat Kuah', price: 25000, category: 'foods', bestSeller: false, icon: 'fa-bowl-food', color: 'bg-red-600', image: 'https://i.ibb.co.com/CpsMmNQq/steamboat-kuah-A4.png' },
+            { id: 25, name: 'Brown Sugar Cofffe Latte', price: 20000, category: 'drinks', bestSeller: false, icon: 'fa-mug-saucer', color: 'bg-amber-900', image: 'https://i.ibb.co.com/5hD23L0Y/brown-sugar-latte-A4.png' },
+            { id: 26, name: 'Coffe Latte', price: 20000, category: 'drinks', bestSeller: false, icon: 'fa-mug-hot', color: 'bg-amber-700', image: 'https://i.ibb.co.com/1thmg4yT/coffee-latte-A4.png' },
+            { id: 27, name: 'Ice Americano', price: 15000, category: 'drinks', bestSeller: false, icon: 'fa-glass-water', color: 'bg-stone-800', image: 'https://i.ibb.co.com/jvmSNf3Z/ice-americano-A4.png' },
+            { id: 28, name: 'Hot Coffe', price: 15000, category: 'drinks', bestSeller: false, icon: 'fa-mug-hot', color: 'bg-yellow-900', image: 'https://i.ibb.co.com/0yRF8f9W/hot-coffee-A4.png' },
+            { id: 29, name: 'Milkshakes (Choco/Matcha/Vanilla)', price: 15000, category: 'drinks', bestSeller: false, icon: 'fa-blender', color: 'bg-pink-400', image: 'https://i.ibb.co.com/qYdzDjR6/aneka-milkshake-A4.png' },
+            { id: 30, name: 'Aneka Juice', price: 17000, category: 'drinks', bestSeller: false, icon: 'fa-wine-glass', color: 'bg-orange-500', image: 'https://i.ibb.co.com/0pnvXhjq/aneka-jus-A4.png' },
+            { id: 31, name: 'Soda Float', price: 15000, category: 'drinks', bestSeller: false, icon: 'fa-bottle-water', color: 'bg-red-600', image: 'https://i.ibb.co.com/LdQRzdmK/soda-float-A4.png' },
+            { id: 32, name: 'Ice Cream Sundae', price: 20000, category: 'dessert', bestSeller: false, icon: 'fa-ice-cream', color: 'bg-rose-500', image: 'https://i.ibb.co.com/YF04RSJQ/ice-cream-sundae-A4.png' },
+            { id: 33, name: 'Odeng Kuah', price: 25000, category: 'dessert', bestSeller: false, icon: 'fa-utensils', color: 'bg-orange-500', image: 'https://i.ibb.co.com/W9wP6Zp/odeng-kuah-A4.png' },
+            { id: 34, name: 'Odeng Mentai', price: 25000, category: 'dessert', bestSeller: false, icon: 'fa-utensils', color: 'bg-amber-600', image: 'https://i.ibb.co.com/jPqYTYNj/odeng-mentai-A4.png' },
+            { id: 35, name: 'Pangsit Chili Oil', price: 15000, category: 'dessert', bestSeller: false, icon: 'fa-bowl-food', color: 'bg-red-600', image: 'https://i.ibb.co.com/jZ1XF78Z/pangsit-chilli-oil-A4.png' }
+        ];
+
+        let products = [...defaultProducts];
+        let cart = [];
+        let currentMenuCat = 'bestseller';
+        let currentFoodPage = 1;
+        let lastSubmittedOrderId = null;
+        let searchKeyword = '';
+
+        const SELLER_ACCESS_CODE = 'BARBAR2024';
+        let isSellerAuthenticated = false;
+
+        let orders = [];
+        let orderCounter = 1;
+        let previousPendingCount = 0;
+
+        // Fungsi Suara Bel Notifikasi Kasir (Web Audio API - Tanpa URL eksternal)
+        function playOrderNotificationBell() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+                osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // Nada A5
+                osc1.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.15); // Nada D6
+                osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc2.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.15);
+
+                gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc1.start();
+                osc2.start();
+                osc1.stop(audioCtx.currentTime + 0.6);
+                osc2.stop(audioCtx.currentTime + 0.6);
+            } catch (e) {
+                console.warn('Audio notification tidak dapat diputar otomatis:', e);
+            }
+        }
+
+        // Inisialisasi Sinkronisasi Cloud Real-Time
+        async function initCloudSync() {
+            try {
+                if (typeof __firebase_config === 'undefined') return;
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    currentUser = cred.user;
+                }
+
+                if (!currentUser) return;
+
+                // Dengarkan Perubahan Pesanan Secara Real-Time
+                const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+                onSnapshot(ordersRef, (snapshot) => {
+                    const cloudOrders = [];
+                    let maxNum = 0;
+
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        cloudOrders.push(data);
+                        const num = parseInt(data.orderId, 10);
+                        if (!isNaN(num) && num > maxNum) {
+                            maxNum = num;
+                        }
+                    });
+
+                    // Urutkan pesanan terbaru di paling atas berdasarkan timestamp
+                    cloudOrders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    orders = cloudOrders;
+                    orderCounter = maxNum + 1;
+
+                    const currentPendingCount = orders.filter(o => o.status === 'PENDING').length;
+
+                    // Bunyikan bel & tampilkan notif jika ada pesanan baru masuk (bukan saat load awal)
+                    if (!isInitialLoad && currentPendingCount > previousPendingCount) {
+                        playOrderNotificationBell();
+                        if (isSellerAuthenticated) {
+                            showModal('🔔 Pesanan Baru Masuk!', 'Ada tiket pesanan baru dari pembeli. Segera cek Order List!');
+                        }
+                    }
+
+                    previousPendingCount = currentPendingCount;
+                    isInitialLoad = false;
+
+                    renderSellerOrders();
+                    updateOrderBadge();
+
+                    // Perbarui status modal antrean pembeli secara live jika sedang terbuka
+                    if (lastSubmittedOrderId && !document.getElementById('queue-receipt-modal').classList.contains('hidden')) {
+                        openQueueModalById(lastSubmittedOrderId);
+                    }
+                }, (error) => {
+                    console.error('Error sinkronisasi pesanan:', error);
+                });
+
+                // Dengarkan Perubahan Menu Tambahan Secara Real-Time
+                const customMenuRef = collection(db, 'artifacts', appId, 'public', 'data', 'custom_menus');
+                onSnapshot(customMenuRef, (snapshot) => {
+                    const addedMenus = [];
+                    snapshot.forEach((docSnap) => {
+                        addedMenus.push(docSnap.data());
+                    });
+                    products = [...defaultProducts, ...addedMenus];
+                    renderMenuSection();
+                }, (error) => {
+                    console.error('Error sinkronisasi menu:', error);
+                });
+
+            } catch (err) {
+                console.error('Gagal menginisialisasi koneksi cloud:', err);
+            }
+        }
+
+        window.changeProductQty = function(productId, delta) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            let cartItem = cart.find(c => c.id === productId);
+            if (cartItem) {
+                cartItem.qty += delta;
+                if (cartItem.qty <= 0) {
+                    cart = cart.filter(c => c.id !== productId);
+                }
+            } else if (delta > 0) {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    icon: product.icon,
+                    color: product.color,
+                    qty: 1
+                });
+            }
+            renderMenuSection();
+            updateCartUI();
+        };
+
+        window.requestSellerAccess = function() {
+            const modal = document.getElementById('seller-auth-modal');
+            const input = document.getElementById('seller-pin-input');
+            const errorMsg = document.getElementById('seller-pin-error');
+            
+            input.value = '';
+            errorMsg.classList.add('hidden');
+            modal.classList.remove('hidden');
+            setTimeout(() => input.focus(), 100);
+        };
+
+        window.verifySellerAccess = function(event) {
+            event.preventDefault();
+            const input = document.getElementById('seller-pin-input');
+            const errorMsg = document.getElementById('seller-pin-error');
+            const enteredCode = input.value.trim().toUpperCase();
+
+            if (enteredCode === SELLER_ACCESS_CODE) {
+                isSellerAuthenticated = true;
+                document.getElementById('seller-lock-icon').className = 'fa-solid fa-store';
+                closeSellerAuthModal();
+                switchView('seller');
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            }
+        };
+
+        window.closeSellerAuthModal = function() {
+            document.getElementById('seller-auth-modal').classList.add('hidden');
+        };
+
+        window.lockSellerSession = function() {
+            isSellerAuthenticated = false;
+            document.getElementById('seller-lock-icon').className = 'fa-solid fa-lock';
+            switchView('customer');
+            showModal('Kasir Dikunci', 'Sesi Mode Penjual telah dikunci kembali.');
+        };
+
+        window.switchView = function(view) {
+            const custView = document.getElementById('customer-view');
+            const sellView = document.getElementById('seller-view');
+            const btnCust = document.getElementById('btn-customer-mode');
+            const btnSell = document.getElementById('btn-seller-mode');
+
+            if(view === 'customer') {
+                isSellerAuthenticated = false;
+                document.getElementById('seller-lock-icon').className = 'fa-solid fa-lock';
+                custView.classList.remove('hidden');
+                sellView.classList.add('hidden');
+                btnCust.className = "px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-barbarYellow text-black border-2 border-black shadow-[3px_3px_0px_#000] hover:bg-yellow-300";
+                btnSell.className = "px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-red-800/80 text-yellow-200 border-2 border-transparent hover:border-yellow-400/50 hover:text-white";
+                renderMenuSection();
+            } else {
+                if (!isSellerAuthenticated) {
+                    requestSellerAccess();
+                    return;
+                }
+                custView.classList.add('hidden');
+                sellView.classList.remove('hidden');
+                btnSell.className = "px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-barbarYellow text-black border-2 border-black shadow-[3px_3px_0px_#000] hover:bg-yellow-300";
+                btnCust.className = "px-4 py-2 rounded-xl text-sm font-retro font-bold tracking-wide transition-all flex items-center gap-2 bg-red-800/80 text-yellow-200 border-2 border-transparent hover:border-yellow-400/50 hover:text-white";
+                renderSellerOrders();
+            }
+        };
+
+        window.switchCustomerTab = function(tab) {
+            ['home', 'about', 'menu', 'chart', 'contact'].forEach(t => {
+                const pageEl = document.getElementById(`page-${t}`);
+                if (pageEl) pageEl.classList.add('hidden');
+                const tabBtn = document.getElementById(`tab-${t}`);
+                if (tabBtn && t !== 'chart') {
+                    tabBtn.classList.remove('ring-4', 'ring-barbarRed');
+                    tabBtn.style.opacity = '0.85';
+                }
+            });
+
+            document.getElementById(`page-${tab}`).classList.remove('hidden');
+            if (tab !== 'chart') {
+                const activeTabBtn = document.getElementById(`tab-${tab}`);
+                if (activeTabBtn) {
+                    activeTabBtn.classList.add('ring-4', 'ring-barbarRed');
+                    activeTabBtn.style.opacity = '1';
+                }
+            }
+            if (tab === 'menu') {
+                renderMenuSection();
+            }
+        };
+
+        window.selectMenuCategory = function(cat) {
+            currentMenuCat = cat;
+            currentFoodPage = 1;
+            document.querySelectorAll('.menu-cat-btn').forEach(btn => {
+                btn.className = "menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-[#FFFDF5] text-gray-800 border-2 border-black pop-button hover:bg-yellow-100 whitespace-nowrap";
+            });
+            const activeBtn = document.getElementById(`mcat-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = "menu-cat-btn text-left px-4 py-3 rounded-2xl font-retro font-bold text-base bg-barbarRed text-white border-2 border-black pop-button whitespace-nowrap";
+            }
+            renderMenuSection();
+        };
+
+        window.changeFoodPage = function(page) {
+            currentFoodPage = page;
+            renderMenuSection();
+        };
+
+        window.filterMenuSearch = function() {
+            searchKeyword = document.getElementById('menu-search-input').value.toLowerCase();
+            renderMenuSection();
+        };
+
+        function renderMenuSection() {
+            const container = document.getElementById('menu-items-container');
+            const titleEl = document.getElementById('active-category-title');
+            const paginationBox = document.getElementById('foods-pagination');
+            const pageIndicator = document.getElementById('pagination-indicator');
+            const schedulePanel = document.getElementById('schedule-panel');
+
+            const titles = { bestseller: 'Best Seller', foods: 'Foods', drinks: 'Drinks', dessert: 'Snack and Dessert', schedule: 'Ice Cream Schedule' };
+            titleEl.innerText = titles[currentMenuCat] || 'Menu';
+
+            if (currentMenuCat === 'schedule') {
+                container.classList.add('hidden');
+                paginationBox.classList.add('hidden');
+                pageIndicator.classList.add('hidden');
+                schedulePanel.classList.remove('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            schedulePanel.classList.add('hidden');
+
+            let list = [];
+            if (searchKeyword) {
+                list = products.filter(p => p.name.toLowerCase().includes(searchKeyword));
+                paginationBox.classList.add('hidden');
+                pageIndicator.classList.add('hidden');
+            } else if (currentMenuCat === 'bestseller') {
+                list = products.filter(p => p.bestSeller);
+                paginationBox.classList.add('hidden');
+                pageIndicator.classList.add('hidden');
+            } else if (currentMenuCat === 'foods') {
+                const allFoods = products.filter(p => p.category === 'foods');
+                const perPage = 11;
+                const start = (currentFoodPage - 1) * perPage;
+                list = allFoods.slice(start, start + perPage);
+
+                paginationBox.classList.remove('hidden');
+                pageIndicator.classList.remove('hidden');
+                pageIndicator.innerText = `Halaman ${currentFoodPage}/2`;
+                document.getElementById('food-page-label').innerText = `${currentFoodPage} / 2`;
+                document.getElementById('btn-prev-food').disabled = currentFoodPage === 1;
+                document.getElementById('btn-next-food').disabled = currentFoodPage === 2;
+            } else {
+                list = products.filter(p => p.category === currentMenuCat);
+                paginationBox.classList.add('hidden');
+                pageIndicator.classList.add('hidden');
+            }
+
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500 font-semibold">Menu tidak ditemukan.</div>';
+                return;
+            }
+
+            list.forEach(p => {
+                const inCart = cart.find(c => c.id === p.id);
+                const qty = inCart ? inCart.qty : 0;
+
+                const mediaBox = p.image ? 
+                    `<div class="h-36 rounded-2xl overflow-hidden border-2 border-black my-2 shadow-inner product-img-box">
+                        <img src="${p.image}" alt="${p.name}">
+                    </div>` :
+                    `<div class="${p.color} text-white h-28 rounded-2xl flex items-center justify-center text-3xl my-2 border-2 border-black shadow-inner">
+                        <i class="fa-solid ${p.icon}"></i>
+                    </div>`;
+
+                const headerTitle = `
+                    <h4 class="font-retro font-bold text-sm sm:text-base text-barbarDarkRed leading-snug min-h-[2.5rem] flex items-center justify-center">
+                        ${p.name}
+                    </h4>
+                `;
+
+                container.innerHTML += `
+                    <div class="bg-[#FFFDF5] rounded-3xl p-3.5 pop-card flex flex-col justify-between text-center">
+                        <div>
+                            ${headerTitle}
+                            ${mediaBox}
+                            <p class="text-barbarDarkRed font-extrabold text-xs sm:text-sm my-2">
+                                Rp ${p.price.toLocaleString('id-ID')}
+                            </p>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-white border-2 border-black rounded-full px-2 py-1 shadow-sm">
+                            <button onclick="changeProductQty(${p.id}, -1)" class="w-7 h-7 rounded-full hover:bg-red-100 text-black font-black flex items-center justify-center text-base">-</button>
+                            <span class="font-retro font-extrabold text-base text-gray-900">${qty}</span>
+                            <button onclick="changeProductQty(${p.id}, 1)" class="w-7 h-7 rounded-full hover:bg-yellow-200 text-black font-black flex items-center justify-center text-base">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.switchSellerTab = function(tab) {
+            const ordersSec = document.getElementById('seller-orders-section');
+            const queueSec = document.getElementById('seller-queue-section');
+            const btnOrders = document.getElementById('seller-tab-orders');
+            const btnQueue = document.getElementById('seller-tab-queue');
+
+            if(tab === 'orders') {
+                ordersSec.classList.remove('hidden');
+                queueSec.classList.add('hidden');
+                btnOrders.className = "px-5 py-2 rounded-xl font-retro font-bold text-lg bg-barbarRed text-white border-2 border-black pop-button";
+                btnQueue.className = "px-5 py-2 rounded-xl font-retro font-bold text-lg bg-white text-gray-800 border-2 border-black pop-button hover:bg-yellow-100";
+            } else {
+                ordersSec.classList.add('hidden');
+                queueSec.classList.remove('hidden');
+                btnQueue.className = "px-5 py-2 rounded-xl font-retro font-bold text-lg bg-barbarRed text-white border-2 border-black pop-button";
+                btnOrders.className = "px-5 py-2 rounded-xl font-retro font-bold text-lg bg-white text-gray-800 border-2 border-black pop-button hover:bg-yellow-100";
+            }
+        };
+
+        function updateCartUI() {
+            const cartContainer = document.getElementById('cart-items-list');
+            const itemCount = document.getElementById('cart-item-count');
+            const navBadge = document.getElementById('nav-cart-badge');
+            const menuHeaderCount = document.getElementById('menu-header-cart-count');
+            const subtotalEl = document.getElementById('subtotal-price');
+            const totalEl = document.getElementById('total-price');
+
+            const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
+            navBadge.innerText = totalItems;
+            if (menuHeaderCount) menuHeaderCount.innerText = totalItems;
+
+            if(cart.length === 0) {
+                cartContainer.innerHTML = '<p class="text-gray-400 text-center text-sm py-8">Belum ada menu yang dipilih.</p>';
+                itemCount.innerText = '0 Item Dipilih';
+                subtotalEl.innerText = 'Rp 0';
+                totalEl.innerText = 'Rp 0';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                html += `
+                    <div class="flex items-center justify-between bg-white p-3 rounded-2xl border-2 border-black">
+                        <div class="flex items-center gap-3">
+                            <div class="${item.color} text-white w-12 h-12 rounded-xl border border-black flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid ${item.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-sm text-gray-900">${item.name}</div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <button onclick="changeProductQty(${item.id}, -1)" class="w-6 h-6 rounded bg-gray-200 text-black font-bold flex items-center justify-center text-xs border border-black">-</button>
+                                    <span class="font-bold text-xs px-1">${item.qty}</span>
+                                    <button onclick="changeProductQty(${item.id}, 1)" class="w-6 h-6 rounded bg-barbarYellow text-black font-bold flex items-center justify-center text-xs border border-black">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-extrabold text-sm text-barbarDarkRed">Rp ${itemTotal.toLocaleString('id-ID')}</div>
+                    </div>
+                `;
+            });
+
+            cartContainer.innerHTML = html;
+            itemCount.innerText = `${totalItems} Item Dipilih`;
+            subtotalEl.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            totalEl.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        window.submitOrder = async function() {
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const note = document.getElementById('customer-note').value.trim();
+
+            if(cart.length === 0) {
+                showModal('Keranjang Kosong', 'Silakan pilih minimal 1 menu.');
+                return;
+            }
+            if(!name || !phone) {
+                showModal('Data Belum Lengkap', 'Silakan lengkapi NAME dan PHONE NUMBER.');
+                return;
+            }
+
+            const formattedId = String(orderCounter++).padStart(3, '0');
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+
+            const newOrder = {
+                orderId: formattedId,
+                customerName: name,
+                customerPhone: phone,
+                items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                note: note || '-',
+                total: total,
+                time: timeStr,
+                createdAt: Date.now(),
+                status: 'PENDING'
+            };
+
+            // Simpan ke Cloud Storage agar langsung muncul di perangkat penjual
+            if (db && currentUser) {
+                try {
+                    const orderDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', `order_${formattedId}_${Date.now()}`);
+                    newOrder.docId = orderDocRef.id;
+                    await setDoc(orderDocRef, newOrder);
+                } catch (e) {
+                    console.error('Gagal mengirim pesanan ke server:', e);
+                }
+            } else {
+                orders.unshift(newOrder);
+            }
+
+            lastSubmittedOrderId = formattedId;
+
+            document.getElementById('btn-my-queue').classList.remove('hidden');
+            document.getElementById('nav-queue-num').innerText = `#${formattedId}`;
+
+            cart = [];
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('customer-note').value = '';
+            updateCartUI();
+            updateOrderBadge();
+            openQueueModalById(formattedId, newOrder);
+        };
+
+        window.openActiveQueueModal = function() {
+            if (lastSubmittedOrderId) openQueueModalById(lastSubmittedOrderId);
+        };
+
+        function openQueueModalById(orderId, fallbackOrder = null) {
+            const ord = orders.find(o => o.orderId === orderId) || fallbackOrder;
+            if (!ord) return;
+            document.getElementById('receipt-time').innerText = `At ${ord.time}`;
+            document.getElementById('receipt-queue-number').innerText = `#${ord.orderId}`;
+            document.getElementById('receipt-customer-info').innerText = `${ord.customerName} (${ord.customerPhone})`;
+
+            const badge = document.getElementById('receipt-status-badge');
+            if (ord.status === 'COMPLETED') {
+                badge.className = "mt-2 inline-block px-3 py-1 rounded-full bg-green-200 text-green-900 border border-black text-[11px]";
+                badge.innerText = "Status: Pembayaran Lunas & Sedang Disiapkan";
+            } else {
+                badge.className = "mt-2 inline-block px-3 py-1 rounded-full bg-yellow-200 text-yellow-900 border border-black text-[11px]";
+                badge.innerText = "Status: Menunggu Pembayaran di Kasir";
+            }
+            document.getElementById('queue-receipt-modal').classList.remove('hidden');
+        }
+
+        window.closeQueueModal = function() {
+            document.getElementById('queue-receipt-modal').classList.add('hidden');
+            switchCustomerTab('home');
+        };
+
+        function renderSellerOrders() {
+            const ordersContainer = document.getElementById('seller-order-tickets');
+            const queueContainer = document.getElementById('seller-queue-tickets');
+            const pendingOrders = orders.filter(o => o.status === 'PENDING');
+            const completedOrders = orders.filter(o => o.status === 'COMPLETED');
+
+            ordersContainer.innerHTML = '';
+            if(pendingOrders.length === 0) {
+                ordersContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8 bg-white rounded-2xl border border-dashed border-gray-400">Tidak ada pesanan masuk.</div>';
+            } else {
+                pendingOrders.forEach(ord => ordersContainer.innerHTML += createTicketHTML(ord, false));
+            }
+
+            queueContainer.innerHTML = '';
+            if(completedOrders.length === 0) {
+                queueContainer.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8 bg-white rounded-2xl border border-dashed border-gray-400">Belum ada pesanan selesai.</div>';
+            } else {
+                completedOrders.forEach(ord => queueContainer.innerHTML += createTicketHTML(ord, true));
+            }
+
+            const totalInc = orders.filter(o => o.status === 'COMPLETED').reduce((sum, o) => sum + o.total, 0);
+            document.getElementById('stat-total-income').innerText = `Rp ${totalInc.toLocaleString('id-ID')}`;
+            updateOrderBadge();
+        }
+
+        function createTicketHTML(ord, isQueueView) {
+            let itemsHTML = '';
+            ord.items.forEach((item, idx) => {
+                itemsHTML += `
+                    <div class="flex justify-between items-center text-xs py-1.5 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            ${!isQueueView ? `
+                                <button onclick="adjustOrderQty('${ord.orderId}', ${idx}, -1)" class="w-5 h-5 bg-gray-200 font-bold rounded">-</button>
+                                <span class="font-bold px-1">${item.qty}x</span>
+                                <button onclick="adjustOrderQty('${ord.orderId}', ${idx}, 1)" class="w-5 h-5 bg-barbarYellow font-bold rounded">+</button>
+                            ` : `
+                                <span class="bg-red-100 text-barbarDarkRed font-bold px-1.5 py-0.5 rounded border border-red-300">${item.qty}x</span>
+                            `}
+                            <span class="font-semibold text-gray-800">${item.name}</span>
+                        </div>
+                        <span class="text-gray-600">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="bg-[#FFFDF5] rounded-3xl p-5 pop-card border-4 border-black flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start border-b-2 border-black pb-3 mb-3">
+                            <div>
+                                <span class="font-retro text-2xl font-black text-barbarRed">#${ord.orderId}</span>
+                                <h4 class="font-bold text-gray-900 text-sm uppercase">${ord.customerName}</h4>
+                                <span class="text-[11px] text-gray-500 font-medium">${ord.customerPhone}</span>
+                            </div>
+                            <span class="text-[11px] bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-bold border border-black">${ord.time}</span>
+                        </div>
+                        <div class="space-y-1 mb-4">${itemsHTML}</div>
+                        <div class="flex justify-between items-center font-bold text-sm border-t-2 border-dashed border-gray-400 pt-2 mb-3">
+                            <span>Total</span>
+                            <span class="text-barbarRed text-base font-extrabold">Rp ${ord.total.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="bg-gray-100 p-2.5 rounded-xl border border-gray-300 text-xs mb-4">
+                            <span class="font-bold text-gray-600 block text-[10px] uppercase">Note:</span>
+                            <span class="text-gray-800 italic">${ord.note}</span>
+                        </div>
+                    </div>
+                    <div>
+                        ${!isQueueView ? `
+                            <button onclick="markPaymentCompleted('${ord.orderId}')" class="w-full bg-barbarRed hover:bg-red-700 text-yellow-300 font-retro text-lg py-2.5 rounded-2xl pop-button font-bold border-2 border-black flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-circle-check"></i> PAYMENT COMPLETED
+                            </button>
+                        ` : `
+                            <div class="w-full bg-green-700 text-white font-retro text-sm py-2 rounded-xl text-center font-bold border-2 border-black">
+                                <i class="fa-solid fa-check-double"></i> SELESAI & LUNAS
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.adjustOrderQty = async function(orderId, itemIdx, delta) {
+            const ord = orders.find(o => o.orderId === orderId);
+            if (!ord) return;
+            ord.items[itemIdx].qty += delta;
+            if (ord.items[itemIdx].qty <= 0) {
+                ord.items.splice(itemIdx, 1);
+            }
+            ord.total = ord.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+            if (db && currentUser && ord.docId) {
+                try {
+                    const orderDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', ord.docId);
+                    await updateDoc(orderDocRef, { items: ord.items, total: ord.total });
+                } catch (e) {
+                    console.error('Gagal memperbarui jumlah pesanan:', e);
+                }
+            }
+            renderSellerOrders();
+        };
+
+        window.markPaymentCompleted = async function(orderId) {
+            const ord = orders.find(o => o.orderId === orderId);
+            if(ord) {
+                ord.status = 'COMPLETED';
+                if (db && currentUser && ord.docId) {
+                    try {
+                        const orderDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', ord.docId);
+                        await updateDoc(orderDocRef, { status: 'COMPLETED' });
+                    } catch (e) {
+                        console.error('Gagal memperbarui status lunas:', e);
+                    }
+                }
+                renderSellerOrders();
+                showModal('Pembayaran Sukses', `Pesanan #${orderId} lunas!`);
+            }
+        };
+
+        window.openAddMenuModal = function() {
+            document.getElementById('add-menu-modal').classList.remove('hidden');
+        };
+
+        window.closeAddMenuModal = function() {
+            document.getElementById('add-menu-modal').classList.add('hidden');
+        };
+
+        window.handleAddNewMenu = async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('new-menu-name').value;
+            const price = parseInt(document.getElementById('new-menu-price').value);
+            const category = document.getElementById('new-menu-cat').value;
+
+            const newId = Date.now();
+            const newMenuObj = {
+                id: newId,
+                name: name,
+                price: price,
+                category: category,
+                bestSeller: false,
+                icon: 'fa-utensils',
+                color: 'bg-red-700'
+            };
+
+            if (db && currentUser) {
+                try {
+                    const menuDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_menus', `menu_${newId}`);
+                    await setDoc(menuDocRef, newMenuObj);
+                } catch (e) {
+                    console.error('Gagal menyimpan menu baru:', e);
+                }
+            } else {
+                products.push(newMenuObj);
+                renderMenuSection();
+            }
+
+            closeAddMenuModal();
+            showModal('Menu Ditambahkan', `Menu "${name}" berhasil ditambahkan dan disinkronkan ke katalog pembeli!`);
+            document.getElementById('new-menu-name').value = '';
+            document.getElementById('new-menu-price').value = '';
+        };
+
+        function updateOrderBadge() {
+            const pendingCount = orders.filter(o => o.status === 'PENDING').length;
+            const badge = document.getElementById('order-badge');
+            if(pendingCount > 0) {
+                badge.innerText = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        window.showModal = function(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        };
+
+        window.onload = function() {
+            renderMenuSection();
+            updateCartUI();
+            renderSellerOrders();
+            initCloudSync();
+        };
+    </script>
+</body>
+</html>
